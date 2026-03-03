@@ -618,6 +618,26 @@ body::after {
   min-width: 8px;
 }
 
+.r-names {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 16px;
+}
+
+.r-name-tag {
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
 .reaction-pop {
   animation: rpop 0.25s cubic-bezier(0.175,0.885,0.32,1.275);
 }
@@ -656,24 +676,167 @@ body::after {
 
 .cal-grid {
   display: grid;
-  grid-template-columns: repeat(15, 1fr);
-  gap: 5px;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
 }
 
 .c-dot {
   aspect-ratio: 1;
-  border-radius: 4px;
+  border-radius: 10px;
   background: var(--border);
-  cursor: default;
+  cursor: pointer;
   position: relative;
-  transition: transform 0.1s;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  overflow: hidden;
 }
 
-.c-dot:hover { transform: scale(1.2); }
-.c-dot.done { background: var(--green); box-shadow: 0 0 6px rgba(0,229,160,0.4); }
-.c-dot.missed { background: var(--red); opacity: 0.6; }
-.c-dot.future { background: #0d0d12; }
+.c-dot:hover { transform: scale(1.05); border-color: var(--border2); }
+
+.c-day-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(14px, 2vw, 22px);
+  line-height: 1;
+  color: var(--muted2);
+  z-index: 1;
+}
+
+.c-date-label {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(7px, 0.9vw, 10px);
+  color: var(--muted);
+  line-height: 1;
+  z-index: 1;
+}
+
+.c-dot.done {
+  background: var(--green);
+  box-shadow: 0 0 10px rgba(0,229,160,0.3);
+}
+.c-dot.done .c-day-num { color: #000; }
+.c-dot.done .c-date-label { color: rgba(0,0,0,0.5); }
+
+.c-dot.missed { background: rgba(255,61,61,0.15); border: 1px solid rgba(255,61,61,0.3); }
+.c-dot.missed .c-day-num { color: var(--red); }
+.c-dot.missed .c-date-label { color: rgba(255,61,61,0.5); }
+
+.c-dot.future { background: #0a0a0e; }
+.c-dot.future .c-day-num { color: #222; }
+.c-dot.future .c-date-label { color: #1a1a1a; }
+
 .c-dot.today { outline: 2px solid var(--lime); outline-offset: 2px; }
+.c-dot.today .c-day-num { color: var(--lime); }
+.c-dot.today .c-date-label { color: rgba(200,255,0,0.6); }
+
+.c-dot.has-notes::after {
+  content: '•';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--lime);
+  opacity: 0.7;
+}
+
+/* Day detail modal */
+.day-modal-box {
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+}
+
+.day-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.day-modal-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  letter-spacing: 3px;
+  line-height: 1;
+}
+
+.day-modal-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.day-modal-close {
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  width: 32px; height: 32px;
+  color: var(--muted2);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.day-modal-close:hover { color: var(--text); border-color: var(--muted2); }
+
+.day-modal-tasks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.day-task-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.day-task-chip.done { background: rgba(0,229,160,0.12); color: var(--green); border: 1px solid rgba(0,229,160,0.3); }
+.day-task-chip.missed { background: rgba(255,61,61,0.08); color: var(--red); border: 1px solid rgba(255,61,61,0.2); opacity: 0.7; }
+
+.day-modal-notes {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted2);
+  min-height: 60px;
+}
+
+.day-modal-notes.has-content { color: var(--text); }
+
+.day-modal-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
 
 /* Legend */
 .cal-legend {
@@ -861,7 +1024,7 @@ body::after {
   .top-bar { padding: 16px 20px; }
   .tabs { padding: 12px 20px 0; overflow-x: auto; }
   .panel-content { padding: 20px; }
-  .cal-grid { grid-template-columns: repeat(10, 1fr); }
+  .cal-grid { grid-template-columns: repeat(5, 1fr); }
   .squad-grid { grid-template-columns: 1fr; }
 }
 
@@ -1063,6 +1226,23 @@ body::after {
   </div>
 </div>
 
+<!-- Day Detail Modal -->
+<div class="modal-bg" id="dayModal">
+  <div class="day-modal-box">
+    <div class="day-modal-header">
+      <div>
+        <div class="day-modal-title" id="dayModalTitle">Day 1</div>
+        <div class="day-modal-date" id="dayModalDate"></div>
+      </div>
+      <button class="day-modal-close" onclick="closeDayModal()">✕</button>
+    </div>
+    <div class="day-modal-label">Tasks</div>
+    <div class="day-modal-tasks" id="dayModalTasks"></div>
+    <div class="day-modal-label">Notes</div>
+    <div class="day-modal-notes" id="dayModalNotes"></div>
+  </div>
+</div>
+
 <!-- Reset Modal -->
 <div class="modal-bg" id="resetModal">
   <div class="modal-box">
@@ -1190,9 +1370,15 @@ function getUserColor(name) {
   return COLORS[idx % COLORS.length];
 }
 
+function parseLocalDate(str) {
+  // Parse YYYY-MM-DD as local time, not UTC
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function calcDay(startDate) {
-  const start = new Date(startDate);
-  const today = new Date(todayStr());
+  const start = parseLocalDate(startDate);
+  const today = parseLocalDate(todayStr());
   const diff = Math.floor((today - start) / 86400000);
   return Math.min(Math.max(diff + 1, 1), 75);
 }
@@ -1206,16 +1392,24 @@ function getRecord(userData, dateStr) {
 }
 
 function countStreak(userData) {
-  // Count consecutive completed days going back from today
-  const today = new Date(todayStr());
-  let streak = 0;
-  for (let i = 0; i < 75; i++) {
-    const d = new Date(today);
+  // Count consecutive days where ALL tasks completed.
+  // Include today if all tasks are done, otherwise start from yesterday.
+  const todayS = todayStr();
+  const TASKS = buildTasks(userData.goal);
+
+  const todayRec = userData.history && userData.history[todayS];
+  const todayComplete = todayRec && TASKS.every(t => todayRec.tasks && todayRec.tasks[t.id]);
+
+  let streak = todayComplete ? 1 : 0;
+  // Walk backwards from yesterday
+  for (let i = 1; i < 75; i++) {
+    const d = parseLocalDate(todayS);
     d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const rec = userData.history && userData.history[ds];
-    if (rec && rec.completed) streak++;
-    else if (i > 0) break; // don't break on today being incomplete
+    const allDone = rec && TASKS.every(t => rec.tasks && rec.tasks[t.id]);
+    if (allDone) streak++;
+    else break;
   }
   return streak;
 }
@@ -1447,18 +1641,29 @@ function renderSquad() {
       return `<div class="sc-task-dot${done?' done':''}"><span>${t.emoji}</span></div>`;
     }).join('');
 
-    // Build reaction buttons — always show all 4, highlight if you reacted
+    // Build reaction buttons with names shown below
     const reactionBtns = REACTION_EMOJIS.map(emoji => {
       const reactors = reactions[emoji] || [];
       const count = reactors.length;
       const youReacted = reactors.includes(currentUser);
-      const canReact = !isYou; // can't react to yourself
-      return `<button
+      const canReact = !isYou;
+      const btn = `<button
         class="reaction-btn${youReacted ? ' reacted' : ''}"
         ${canReact ? `onclick="toggleReaction('${name}','${emoji}')"` : 'disabled style="opacity:0.35;cursor:default"'}
-        title="${reactors.length ? reactors.join(', ') : 'Be the first!'}"
       >${emoji}<span class="r-count">${count > 0 ? count : ''}</span></button>`;
+      return btn;
     }).join('');
+
+    // Names row — show who reacted with each emoji
+    const allReactors = REACTION_EMOJIS.flatMap(emoji => {
+      const reactors = reactions[emoji] || [];
+      return reactors.map(r => `<span class="r-name-tag">${reactions[emoji] ? REACTION_EMOJIS[REACTION_EMOJIS.indexOf(emoji)] : ''}${r}</span>`);
+    });
+    const reactorNames = REACTION_EMOJIS.map(emoji => {
+      const reactors = reactions[emoji] || [];
+      return reactors.map(r => `<span class="r-name-tag">${emoji} ${r}</span>`).join('');
+    }).join('');
+    const namesRow = reactorNames ? `<div class="r-names">${reactorNames}</div>` : '';
 
     card.innerHTML = `
       <div class="sc-header">
@@ -1475,6 +1680,7 @@ function renderSquad() {
         <span class="sc-streak">🔥 ${streak} day streak</span>
       </div>
       <div class="sc-reactions">${reactionBtns}</div>
+      ${namesRow}
     `;
     grid.appendChild(card);
   });
@@ -1482,31 +1688,86 @@ function renderSquad() {
 
 function renderCalendar() {
   const userData = allData[currentUser];
-  const start = new Date(userData.startDate);
+  const start = parseLocalDate(userData.startDate);
   const today = todayStr();
 
   document.getElementById('calTitle').textContent = `${currentUser}'s 75 Days`;
-  document.getElementById('calSubtitle').textContent = `Started ${start.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
+  document.getElementById('calSubtitle').textContent = `Started ${parseLocalDate(userData.startDate).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`;
 
   const cal = document.getElementById('myCal');
   cal.innerHTML = '';
 
   for (let i = 0; i < 75; i++) {
-    const d = new Date(start);
+    const d = parseLocalDate(userData.startDate);
     d.setDate(d.getDate() + i);
-    const ds = d.toISOString().split('T')[0];
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const rec = userData.history && userData.history[ds];
+    const hasNotes = rec && rec.notes && rec.notes.trim().length > 0;
+
     const dot = document.createElement('div');
     dot.className = 'c-dot';
-    dot.title = `Day ${i+1}: ${ds}`;
+
+    // Short date label e.g. "Mar 3"
+    const dateLabel = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+
+    dot.innerHTML = `
+      <div class="c-date-label">${dateLabel}</div>
+      <div class="c-day-num">${i + 1}</div>
+    `;
 
     if (ds === today) dot.classList.add('today');
     else if (ds > today) dot.classList.add('future');
     else {
-      const rec = userData.history && userData.history[ds];
-      dot.classList.add(rec && rec.completed ? 'done' : 'missed');
+      const TASKS = buildTasks(userData.goal);
+      const allDone = rec && TASKS.every(t => rec.tasks && rec.tasks[t.id]);
+      dot.classList.add(allDone ? 'done' : 'missed');
     }
+
+    if (hasNotes) dot.classList.add('has-notes');
+
+    // Click to open day detail (only past days and today)
+    if (ds <= today) {
+      dot.onclick = () => openDayModal(i + 1, ds, rec, userData);
+    }
+
     cal.appendChild(dot);
   }
+}
+
+function openDayModal(dayNum, ds, rec, userData) {
+  const d = parseLocalDate(ds);
+  const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+  document.getElementById('dayModalTitle').textContent = `Day ${dayNum}`;
+  document.getElementById('dayModalDate').textContent = dateStr;
+
+  // Tasks
+  const TASKS = buildTasks(userData.goal);
+  const tasksEl = document.getElementById('dayModalTasks');
+  tasksEl.innerHTML = '';
+  TASKS.forEach(t => {
+    const done = rec && rec.tasks && rec.tasks[t.id];
+    const chip = document.createElement('div');
+    chip.className = `day-task-chip ${done ? 'done' : 'missed'}`;
+    chip.innerHTML = `${t.emoji} ${t.name.split(':')[0]}`;
+    tasksEl.appendChild(chip);
+  });
+
+  // Notes
+  const notesEl = document.getElementById('dayModalNotes');
+  const notes = rec && rec.notes && rec.notes.trim();
+  if (notes) {
+    notesEl.textContent = notes;
+    notesEl.classList.add('has-content');
+  } else {
+    notesEl.textContent = 'No notes for this day.';
+    notesEl.classList.remove('has-content');
+  }
+
+  document.getElementById('dayModal').classList.add('show');
+}
+
+function closeDayModal() {
+  document.getElementById('dayModal').classList.remove('show');
 }
 
 // ─── TABS ──────────────────────────────────────────────────
