@@ -1529,6 +1529,33 @@ function renderApp() {
 function renderToday() {
   const userData = allData[currentUser];
   const today = todayStr();
+  const startDate = userData.startDate;
+
+  // If start date is in the future, show countdown instead
+  const start = parseLocalDate(startDate);
+  const todayDate = parseLocalDate(today);
+  const daysUntil = Math.floor((start - todayDate) / 86400000);
+
+  if (daysUntil > 0) {
+    document.getElementById('myDayNum').textContent = '—';
+    document.getElementById('todayDateStr').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+    document.getElementById('allDoneBanner').style.display = 'none';
+    document.getElementById('myProgFill').style.width = '0%';
+    document.getElementById('myProgLabel').textContent = '0 / 5';
+    const list = document.getElementById('myTasksList');
+    list.innerHTML = `
+      <div style="background:var(--s1);border:1px solid var(--border2);border-radius:14px;padding:32px;text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">⏳</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;color:var(--lime);margin-bottom:8px;">
+          ${daysUntil} DAY${daysUntil > 1 ? 'S' : ''} TO GO
+        </div>
+        <div style="font-size:13px;color:var(--muted2);">Your challenge starts ${parseLocalDate(startDate).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}. Get ready.</div>
+      </div>
+    `;
+    document.getElementById('myNotes').value = '';
+    return;
+  }
+
   const rec = getRecord(userData, today);
   const dayNum = calcDay(userData.startDate);
 
