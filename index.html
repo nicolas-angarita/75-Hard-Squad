@@ -1273,7 +1273,7 @@ function buildTasks(goal) {
 // ─── CLOUD STORAGE (JSONBin) ───────────────────────────────
 const JSONBIN_KEY = '$2a$10$qYWTQKy9gWF64TvqAcWRJ.XQ7Cytyux4GtG37uH6LkZrL.0YlTm9a';
 const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
-let BIN_ID = localStorage.getItem('75hard_bin_id') || null;
+const BIN_ID = '69a88e57d0ea881f40ef1f68'; // hardcoded — everyone shares this bin
 
 let allData = {};
 let currentUser = null;
@@ -1291,32 +1291,15 @@ function hideLoader() {
 async function cloudLoad() {
   showLoader('Loading squad data...');
   try {
-    if (!BIN_ID) {
-      // First run — create a new bin
-      const res = await fetch(`${JSONBIN_BASE}/b`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Master-Key': JSONBIN_KEY,
-          'X-Bin-Name': '75hard-squad',
-          'X-Bin-Private': 'false'
-        },
-        body: JSON.stringify({})
-      });
-      const data = await res.json();
-      BIN_ID = data.metadata.id;
-      localStorage.setItem('75hard_bin_id', BIN_ID);
-      allData = {};
-    } else {
-      const res = await fetch(`${JSONBIN_BASE}/b/${BIN_ID}/latest`, {
-        headers: { 'X-Master-Key': JSONBIN_KEY }
-      });
-      const data = await res.json();
-      allData = data.record || {};
-    }
+    const res = await fetch(`${JSONBIN_BASE}/b/${BIN_ID}/latest`, {
+      headers: { 'X-Access-Key': JSONBIN_KEY }
+    });
+    const data = await res.json();
+    allData = data.record || {};
+    // Clear init flag if present
+    if (allData.init) delete allData.init;
   } catch(e) {
     console.error('Load error', e);
-    // Fallback to localStorage if offline
     try { allData = JSON.parse(localStorage.getItem('75hard_squad') || '{}'); } catch {}
   }
   hideLoader();
@@ -1335,7 +1318,7 @@ async function saveAll(data) {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'X-Master-Key': JSONBIN_KEY
+        'X-Access-Key': JSONBIN_KEY
       },
       body: JSON.stringify(data)
     });
@@ -1354,7 +1337,7 @@ async function refreshFromCloud() {
   if (!BIN_ID) return;
   try {
     const res = await fetch(`${JSONBIN_BASE}/b/${BIN_ID}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_KEY }
+      headers: { 'X-Access-Key': JSONBIN_KEY }
     });
     const data = await res.json();
     allData = data.record || {};
