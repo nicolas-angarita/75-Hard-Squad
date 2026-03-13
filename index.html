@@ -823,10 +823,16 @@ body::after {
   padding: 14px;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--muted2);
-  min-height: 60px;
+  color: var(--text);
+  min-height: 80px;
+  width: 100%;
+  resize: vertical;
+  outline: none;
+  font-family: 'Syne', sans-serif;
+  transition: border-color 0.2s;
 }
 
+.day-modal-notes:focus { border-color: rgba(200,255,0,0.3); }
 .day-modal-notes.has-content { color: var(--text); }
 
 .day-modal-label {
@@ -957,6 +963,59 @@ body::after {
   font-size: 14px;
   color: #000;
   font-weight: 700;
+}
+
+
+/* ── SUBMIT DAY BUTTON ── */
+.submit-row {
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.submit-btn {
+  width: 100%;
+  background: var(--lime);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 4px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 30px rgba(200,255,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 0 50px rgba(200,255,0,0.35);
+}
+
+.submit-btn:disabled {
+  background: var(--border2);
+  color: var(--muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.submit-btn.submitted {
+  background: var(--green);
+  box-shadow: 0 0 30px rgba(0,229,160,0.2);
+}
+
+.submit-hint {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 8px;
 }
 
 /* ── DELETE USER ── */
@@ -1180,6 +1239,13 @@ body::after {
       <textarea id="myNotes" placeholder="Workout log, meals eaten, how you're feeling..."></textarea>
     </div>
 
+    <div class="submit-row">
+      <button class="submit-btn" id="submitDayBtn" onclick="submitDay()" disabled>
+        SUBMIT DAY
+      </button>
+      <div class="submit-hint" id="submitHint">Check off all 5 tasks to submit</div>
+    </div>
+
     <div class="reset-row">
       <div>
         <strong>Missed a task?</strong>
@@ -1238,8 +1304,10 @@ body::after {
     </div>
     <div class="day-modal-label">Tasks</div>
     <div class="day-modal-tasks" id="dayModalTasks"></div>
-    <div class="day-modal-label">Notes</div>
-    <div class="day-modal-notes" id="dayModalNotes"></div>
+    <div class="day-modal-label" style="margin-top:16px;">Notes</div>
+    <textarea class="day-modal-notes" id="dayModalNotes" placeholder="Add notes for this day..."></textarea>
+    <button class="submit-btn" id="dayModalSubmitBtn" style="margin-top:14px;font-size:18px;padding:14px;" onclick="submitPastDay()">SUBMIT DAY</button>
+    <div class="submit-hint" id="dayModalHint">Check off all 5 tasks to submit</div>
   </div>
 </div>
 
@@ -1608,6 +1676,32 @@ function renderToday() {
     getRecord(allData[currentUser], todayStr()).notes = notes.value;
     saveAll(allData);
   };
+
+  // Submit button state
+  const submitBtn = document.getElementById('submitDayBtn');
+  const submitHint = document.getElementById('submitHint');
+  if (submitBtn) {
+    if (allDone && rec.submitted) {
+      // Already submitted today
+      submitBtn.disabled = false;
+      submitBtn.classList.add('submitted');
+      submitBtn.textContent = '✓ DAY SUBMITTED';
+      submitHint.textContent = 'Synced to cloud · Still editable';
+    } else if (allDone) {
+      // All tasks done, not yet submitted
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('submitted');
+      submitBtn.textContent = 'SUBMIT DAY';
+      submitHint.textContent = 'All tasks complete — lock in your day!';
+    } else {
+      // Not all tasks done
+      submitBtn.disabled = true;
+      submitBtn.classList.remove('submitted');
+      submitBtn.textContent = 'SUBMIT DAY';
+      const remaining = TASKS.length - doneCount;
+      submitHint.textContent = `${remaining} task${remaining > 1 ? 's' : ''} remaining`;
+    }
+  }
 }
 
 const REACTION_EMOJIS = ['🔥','💪','👏','😤'];
@@ -1750,40 +1844,140 @@ function renderCalendar() {
   }
 }
 
+let currentModalDate = null;
+
 function openDayModal(dayNum, ds, rec, userData) {
+  currentModalDate = ds;
   const d = parseLocalDate(ds);
   const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
   document.getElementById('dayModalTitle').textContent = `Day ${dayNum}`;
   document.getElementById('dayModalDate').textContent = dateStr;
 
-  // Tasks
+  // Ensure record exists
+  if (!allData[currentUser].history) allData[currentUser].history = {};
+  if (!allData[currentUser].history[ds]) {
+    allData[currentUser].history[ds] = { tasks:{}, notes:'', completed:false, reactions:{} };
+  }
+  const liveRec = allData[currentUser].history[ds];
   const TASKS = buildTasks(userData.goal);
+
+  // Render interactive task chips
+  renderModalTasks(ds, liveRec, TASKS);
+
+  // Notes — editable textarea
+  const notesEl = document.getElementById('dayModalNotes');
+  notesEl.value = liveRec.notes || '';
+  notesEl.oninput = () => {
+    allData[currentUser].history[ds].notes = notesEl.value;
+    saveAll(allData);
+  };
+
+  updateModalSubmitBtn(liveRec, TASKS);
+  document.getElementById('dayModal').classList.add('show');
+}
+
+function renderModalTasks(ds, rec, TASKS) {
   const tasksEl = document.getElementById('dayModalTasks');
   tasksEl.innerHTML = '';
   TASKS.forEach(t => {
-    const done = rec && rec.tasks && rec.tasks[t.id];
+    const done = rec.tasks && rec.tasks[t.id];
     const chip = document.createElement('div');
     chip.className = `day-task-chip ${done ? 'done' : 'missed'}`;
+    chip.style.cursor = 'pointer';
     chip.innerHTML = `${t.emoji} ${t.name.split(':')[0]}`;
+    chip.onclick = () => {
+      if (!allData[currentUser].history[ds]) {
+        allData[currentUser].history[ds] = { tasks:{}, notes:'', completed:false, reactions:{} };
+      }
+      const r = allData[currentUser].history[ds];
+      r.tasks[t.id] = !r.tasks[t.id];
+      const allDone = TASKS.every(tk => r.tasks[tk.id]);
+      r.completed = allDone;
+      saveAll(allData);
+      renderModalTasks(ds, r, TASKS);
+      updateModalSubmitBtn(r, TASKS);
+      renderCalendar();
+      renderSquad();
+    };
     tasksEl.appendChild(chip);
   });
+}
 
-  // Notes
-  const notesEl = document.getElementById('dayModalNotes');
-  const notes = rec && rec.notes && rec.notes.trim();
-  if (notes) {
-    notesEl.textContent = notes;
-    notesEl.classList.add('has-content');
+function updateModalSubmitBtn(rec, TASKS) {
+  const btn = document.getElementById('dayModalSubmitBtn');
+  const hint = document.getElementById('dayModalHint');
+  const allDone = TASKS.every(t => rec.tasks && rec.tasks[t.id]);
+  if (rec.submitted && allDone) {
+    btn.disabled = false;
+    btn.classList.add('submitted');
+    btn.textContent = '✓ DAY SUBMITTED';
+    hint.textContent = 'Synced to cloud · Still editable';
+  } else if (allDone) {
+    btn.disabled = false;
+    btn.classList.remove('submitted');
+    btn.textContent = 'SUBMIT DAY';
+    hint.textContent = 'All tasks complete — lock in your day!';
   } else {
-    notesEl.textContent = 'No notes for this day.';
-    notesEl.classList.remove('has-content');
+    btn.disabled = true;
+    btn.classList.remove('submitted');
+    btn.textContent = 'SUBMIT DAY';
+    const remaining = TASKS.length - TASKS.filter(t => rec.tasks && rec.tasks[t.id]).length;
+    hint.textContent = `${remaining} task${remaining > 1 ? 's' : ''} remaining`;
   }
+}
 
-  document.getElementById('dayModal').classList.add('show');
+async function submitPastDay() {
+  if (!currentModalDate) return;
+  const rec = allData[currentUser].history[currentModalDate];
+  if (!rec) return;
+  const TASKS = buildTasks(allData[currentUser].goal);
+  const allDone = TASKS.every(t => rec.tasks && rec.tasks[t.id]);
+  if (!allDone) return;
+
+  rec.submitted = true;
+  rec.completed = true;
+  rec.submittedAt = new Date().toISOString();
+
+  const btn = document.getElementById('dayModalSubmitBtn');
+  btn.textContent = 'SAVING...';
+  btn.disabled = true;
+
+  await saveAll(allData);
+
+  updateModalSubmitBtn(rec, TASKS);
+  renderCalendar();
+  renderSquad();
 }
 
 function closeDayModal() {
   document.getElementById('dayModal').classList.remove('show');
+}
+
+// ─── SUBMIT DAY ────────────────────────────────────────────
+async function submitDay() {
+  const today = todayStr();
+  const rec = getRecord(allData[currentUser], today);
+  const TASKS = buildTasks(allData[currentUser].goal);
+
+  // Double check all tasks are done
+  const allDone = TASKS.every(t => rec.tasks && rec.tasks[t.id]);
+  if (!allDone) return;
+
+  // Mark as submitted and completed
+  rec.submitted = true;
+  rec.completed = true;
+  rec.submittedAt = new Date().toISOString();
+
+  // Show saving state
+  const btn = document.getElementById('submitDayBtn');
+  btn.textContent = 'SAVING...';
+  btn.disabled = true;
+
+  await saveAll(allData);
+
+  // Update UI
+  renderToday();
+  renderSquad();
 }
 
 // ─── TABS ──────────────────────────────────────────────────
